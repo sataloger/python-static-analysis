@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/old/!svn/ver/15896/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run
+END
+var_aliases.py
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/old/!svn/ver/15896/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/var_aliases.py
+END
+type_tuple.py
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_tuple.py
+END
+var_operations.py
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/old/!svn/ver/15736/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/var_operations.py
+END
+my_serialize.py
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/my_serialize.py
+END
+emulation.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/old/!svn/ver/15824/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/emulation.py
+END
+type_classes.py
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_classes.py
+END
+cfg_wrapper.py
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/cfg_wrapper.py
+END
+type_callable.py
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/old/!svn/ver/15896/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_callable.py
+END
+type_unknown.py
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_unknown.py
+END
+type_baseobject.py
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_baseobject.py
+END
+type_class.py
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_class.py
+END
+var_types.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/var_types.py
+END
+type_list.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_list.py
+END
+interpr_state.py
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/old/!svn/ver/15896/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/interpr_state.py
+END
+type_dict.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/old/!svn/ver/15815/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/type_dict.py
+END
+base_classes.py
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/old/!svn/ver/15736/trunk/students/mischenko/pytypes-all/pytypes/pytypes_run/base_classes.py
+END

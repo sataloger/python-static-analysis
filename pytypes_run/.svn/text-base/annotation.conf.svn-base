@@ -1,0 +1,97 @@
+[__builtins__]
+Exception       = Exception
+False           = bool
+None            = NoneType
+True            = bool
+__debug__       = bool
+__doc__         = str
+__name__        = str
+copyright       = str
+credits         = str
+lisence         = str
+
+[__builtins__functions]
+__import__      = module
+abs             = INPUT_TYPES
+all             = bool
+any             = bool
+apply           = NoneType
+basestring      = STRANGE_TYPE
+bool            = bool
+buffer          = unknown
+callable        = bool
+chr             = str
+classmethod     = unknown
+cmp             = bool
+coerce          = tuple
+compile         = code
+complex         = complex
+delattr         = NoneType
+dict            = dict
+dir             = list
+divmod          = tuple
+enumerate       = unknown
+eval            = unknown
+execfile        = NoneType
+exit            = NoneType
+file            = file
+filter          = list tuple str
+float           = float
+frozenset       = set
+getattr         = unknown
+globals         = dict
+hasattr         = bool
+hash            = int
+help            = str
+hex             = str
+id              = int
+input           = unknown
+int             = int
+intern          = str
+isinstance      = bool
+issubclass      = bool
+iter            = unknown
+len             = int
+list            = list
+locals          = dict
+long            = long
+map             = list
+max             = INPUT_TYPES
+min             = INPUT_TYPES
+object          = object
+oct             = str
+open            = file
+ord             = int
+pow             = INPUT_TYPES
+property        = unknown
+quit            = NoneType
+range           = list
+raw_input       = str
+reduce          = unknown
+reload          = module
+repr            = str
+reversed        = INPUT_TYPES
+round           = float
+set             = set
+setattr         = NoneType
+slice           = slice
+sorted          = list
+staticmethod    = function
+str             = str
+sum             = INPUT_TYPES
+super           = unknown
+tuple           = tuple
+unichr          = unicode
+vars            = dict
+xrange          = unknown
+zip             = list
+
+
+
+
+
+;'ArithmeticError', 'AssertionError', 'AttributeError', 'BaseException', 'DeprecationWarning', 'EOFError', 'Ellipsis', 'EnvironmentError', 'Exception', 'False', 'FloatingPointError', 'FutureWarning', 'GeneratorExit', 'IOError', 'ImportError', 'ImportWarning', 'IndentationError', 'IndexError', 'KeyError', 'KeyboardInterrupt', 'LookupError', 'MemoryError', 'NameError', 'None', 'NotImplemented', 'NotImplementedError', 'OSError', 'OverflowError', 'PendingDeprecationWarning', 'ReferenceError', 'RuntimeError', 'RuntimeWarning', 'StandardError', 'StopIteration', 'SyntaxError', 'SyntaxWarning', 'SystemError', 'SystemExit', 'TabError', 'True', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError', 'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError', 'UnicodeWarning', 'UserWarning', 'ValueError', 'Warning', 'ZeroDivisionError', '_', '__debug__', '__doc__', '__import__', '__name__', 'abs', 'all', 'any', 'apply', 'basestring', 'bool', 'buffer', 'callable', 'chr', 'classmethod', 'cmp', 'coerce', 'compile', 'complex', 'copyright', 'credits', 'delattr', 'dict', 'dir', 'divmod', 'enumerate', 'eval', 'execfile', 'exit', 'file', 'filter', 'float', 'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'help', 'hex', 'id', 'input', 'int', 'intern', 'isinstance', 'issubclass', 'iter', 'len', 'license', 'list', 'locals', 'long', 'map', 'max', 'min', 'object', 'oct', 'open', 'ord', 'pow', 'property', 'quit', 'range', 'raw_input', 'reduce', 'reload', 'repr', 'reversed', 'round', 'set', 'setattr', 'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple', 'type', 'unichr', 'unicode', 'vars', 'xrange', 'zip'
+
+
+
+

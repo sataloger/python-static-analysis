@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+rm -r cfg_arch
+mkdir cfg_arch cfg_arch/pic cfg_arch/txt
+
+cp *.py *.bh cfg_arch/
+tar -cvvf cfg_arch.tar cfg_arch/
+
+rm -r cfg_arch

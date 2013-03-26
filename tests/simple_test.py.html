@@ -1,0 +1,99 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+  <title></title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <style type="text/css">
+.hll { background-color: #ffffcc }
+.c { color: #408080; font-style: italic } /* Comment */
+.err { border: 1px solid #FF0000 } /* Error */
+.k { color: #008000; font-weight: bold } /* Keyword */
+.o { color: #666666 } /* Operator */
+.cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.cp { color: #BC7A00 } /* Comment.Preproc */
+.c1 { color: #408080; font-style: italic } /* Comment.Single */
+.cs { color: #408080; font-style: italic } /* Comment.Special */
+.gd { color: #A00000 } /* Generic.Deleted */
+.ge { font-style: italic } /* Generic.Emph */
+.gr { color: #FF0000 } /* Generic.Error */
+.gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.gi { color: #00A000 } /* Generic.Inserted */
+.go { color: #808080 } /* Generic.Output */
+.gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.gs { font-weight: bold } /* Generic.Strong */
+.gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.gt { color: #0040D0 } /* Generic.Traceback */
+.kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.kp { color: #008000 } /* Keyword.Pseudo */
+.kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.kt { color: #B00040 } /* Keyword.Type */
+.m { color: #666666 } /* Literal.Number */
+.s { color: #BA2121 } /* Literal.String */
+.na { color: #7D9029 } /* Name.Attribute */
+.nb { color: #008000 } /* Name.Builtin */
+.nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.no { color: #880000 } /* Name.Constant */
+.nd { color: #AA22FF } /* Name.Decorator */
+.ni { color: #999999; font-weight: bold } /* Name.Entity */
+.ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.nf { color: #0000FF } /* Name.Function */
+.nl { color: #A0A000 } /* Name.Label */
+.nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.nt { color: #008000; font-weight: bold } /* Name.Tag */
+.nv { color: #19177C } /* Name.Variable */
+.ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.w { color: #bbbbbb } /* Text.Whitespace */
+.mf { color: #666666 } /* Literal.Number.Float */
+.mh { color: #666666 } /* Literal.Number.Hex */
+.mi { color: #666666 } /* Literal.Number.Integer */
+.mo { color: #666666 } /* Literal.Number.Oct */
+.sb { color: #BA2121 } /* Literal.String.Backtick */
+.sc { color: #BA2121 } /* Literal.String.Char */
+.sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.s2 { color: #BA2121 } /* Literal.String.Double */
+.se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.sh { color: #BA2121 } /* Literal.String.Heredoc */
+.si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.sx { color: #008000 } /* Literal.String.Other */
+.sr { color: #BB6688 } /* Literal.String.Regex */
+.s1 { color: #BA2121 } /* Literal.String.Single */
+.ss { color: #19177C } /* Literal.String.Symbol */
+.bp { color: #008000 } /* Name.Builtin.Pseudo */
+.vc { color: #19177C } /* Name.Variable.Class */
+.vg { color: #19177C } /* Name.Variable.Global */
+.vi { color: #19177C } /* Name.Variable.Instance */
+.il { color: #666666 } /* Literal.Number.Integer.Long */
+.highlight { line-height: 1.2em }
+
+  </style>
+</head>
+<body>
+<h2></h2>
+<div class="highlight"><pre><span class="lineno"> 1</span> <span class="c" >#a = 1</span>
+<span class="lineno"> 2</span> <span class="c" >#b = a</span>
+<span class="lineno"> 3</span> <span class="c" >#c = &quot;rte&quot;</span>
+<span class="lineno"> 4</span> <span class="c" >#</span>
+<span class="lineno"> 5</span> <span class="c" >#q = 1+1</span>
+<span class="lineno"> 6</span> <span class="c" >#q+=1</span>
+<span class="lineno"> 7</span> <span class="c" >#def func():</span>
+<span class="lineno"> 8</span> <span class="c" >#    return c</span>
+<span class="lineno"> 9</span> <span class="c" >#</span>
+<span class="lineno">10</span> <span class="c" >#d = func()</span>
+<span class="lineno">11</span> <span class="c" >#type()</span>
+<span class="lineno">12</span> <span class="c" >#</span>
+<span class="lineno">13</span> <span class="c" >#class T(object):</span>
+<span class="lineno">14</span> <span class="c" >#    def a(self):</span>
+<span class="lineno">15</span> <span class="c" >#        def b():</span>
+<span class="lineno">16</span> <span class="c" >#            pass</span>
+<span class="lineno">17</span> <span class="c" >#        pass</span>
+<span class="lineno">18</span> 
+<span class="lineno">19</span> <span class="k" >def</span> <span class="nf" style="background-color: #C3D9FF; border-color: #20C; border-style: dotted; border-width: 1px;" title="f: {'normal': function(<code object f at 0000000003997198, file 'C:\Developing\analysis\analyzer\tests\simple_test.py', line 19>)}">f</span><span class="p" >():</span>
+<span class="lineno">20</span>     <span class="n" style="background-color: #C3D9FF; border-color: #20C; border-style: dotted; border-width: 1px;" title="a: {'normal': unknown}">a</span> <span class="o" >=</span> <span class="nb" style="background-color: #C3D9FF; border-color: #20C; border-style: dotted; border-width: 1px;" title="long: {'normal': builtin_function([long]: unknown)}">long</span><span class="p" >(</span><span class="mi" style="" title="constant">1</span><span class="p" >)</span>
+<span class="lineno">21</span> 
+<span class="lineno">22</span> <span class="n" style="background-color: #C3D9FF; border-color: #20C; border-style: dotted; border-width: 1px;" title="f: {'normal': function(<code object f at 0000000003997198, file 'C:\Developing\analysis\analyzer\tests\simple_test.py', line 19>)}">f</span><span class="p" >()</span>
+</pre></div>
