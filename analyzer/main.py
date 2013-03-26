@@ -6,15 +6,15 @@ import time
 from optparse import OptionParser
 
 # hack: loading VarTypes, create_empty, etc. in __builtin__
-import analyzer.pytypes_run.var_types
-import analyzer.pytypes_run.interpr_state
-import analyzer.pytypes_run.var_aliases
+import pytypes_run.var_types
+import pytypes_run.interpr_state
+import pytypes_run.var_aliases
 
-from analyzer.pytypes_run.base_classes import setglobal
-from analyzer.pytypes_run.emulation import ProcessModule
-from analyzer.db.manage import *
-from analyzer.db.tables import *
-from analyzer import settings
+from .pytypes_run.base_classes import setglobal
+from .pytypes_run.emulation import ProcessModule
+from .db.manage import *
+from .db.tables import *
+import settings
 
 setglobal('mydebugDict', {})
 
@@ -77,7 +77,7 @@ if __name__=="__main__":
         os._exit(1)
 
     logging.basicConfig(format ='%(asctime)s %(levelname)s  %(name)s %(message)s')
-    log = logging.getLogger('analyzer')
+    log = logging.getLogger('python-static-analysis')
     log.setLevel(getattr(logging,settings.LOGGING))
     logging.getLogger('sqlalchemy').setLevel(getattr(logging,settings.DATABASE_LOGGING))
 
