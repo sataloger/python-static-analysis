@@ -1,6 +1,6 @@
-#a = 1
-#b = a
-#c = "rte"
+a = 1
+b = a
+c = "rte"
 
 q = 3
 q += 1
@@ -17,8 +17,6 @@ q += 1
 #        pass
 
 def f():
-#    a = long(1)
-    t = 3
-    t += 1
+    a = long(1)
 
 f()

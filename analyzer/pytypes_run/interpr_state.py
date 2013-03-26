@@ -224,7 +224,8 @@ class SymbolTable(BaseInfoStorage):
                     # stub for creating MetaClass global symtable
                     #TODO TEST
                     self.globals['__name__'] = {"types": VarTypes(init_types={'str':None}), "aliases": create_empty_alias('__name__',None),"values":create_empty_value()}
-                    print 'gundef: %r its name: %r', gundef, gundef['__name__']
+#                    print gundef
+#                    print 'gundef: %r its name: %r', gundef, gundef['__name__']
                 else:
                     pass
 #                    print 'Warning: global variables %r wasn\'t defined!' % gundef
