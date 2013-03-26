@@ -215,7 +215,7 @@ class VarTypes(BaseInfoStorage):
                                          if typename in self.types]
 
     def to_list(self):
-        res = create_empty()
+        res = create_empty( "types" )
         has_smth = False
         if 'TypeSuperList' in self.types:
             lst_obj = deepcopy(self.types['TypeSuperList'])
@@ -258,9 +258,9 @@ class VarTypes(BaseInfoStorage):
         mult_size = self.is_multiple_res(inst)
         if inst_name not in INPLACE_INSTS:
             if mult_size is None:
-                res = {"types":create_empty()}
+                res = {"types":create_empty( "types" )}
             else:
-                res = {"types": [create_empty() for i in range(mult_size)]}
+                res = {"types": [create_empty( "types" ) for i in range(mult_size)]}
 
         if 'inst_name' not in kwargs:
             kwargs['inst_name'] = inst_name
@@ -329,7 +329,7 @@ class VarTypes(BaseInfoStorage):
 
     @staticmethod
     def build_tuple(vars):
-        res = create_empty()
+        res = create_empty( "types" )
         tpname = VarTypes.get_class_typename(get_const_typename(()))
         res.types[tpname] = VarTypes.types_classes_by_real_name[tpname](VarTypes.containers_maxlen, VarTypes.containers_maxname)
         res.types[tpname].build(vars)
@@ -337,7 +337,7 @@ class VarTypes(BaseInfoStorage):
 
     @staticmethod
     def build_list(vars):
-        res = create_empty()
+        res = create_empty( "types" )
         tpname = VarTypes.get_class_typename(get_const_typename([]))
         res.types[tpname] = VarTypes.types_classes_by_real_name[tpname](VarTypes.containers_maxlen, VarTypes.containers_maxname)
         res.types[tpname].build(vars)
@@ -345,7 +345,7 @@ class VarTypes(BaseInfoStorage):
 
     @staticmethod
     def build_dict(inst):
-        res = create_empty()
+        res = create_empty( "types" )
         tpname = VarTypes.get_class_typename(get_const_typename({}))
         res.types[tpname] = VarTypes.types_classes_by_real_name[tpname](VarTypes.containers_maxlen, VarTypes.containers_maxname)
         res.types[tpname].build(inst)
@@ -353,14 +353,14 @@ class VarTypes(BaseInfoStorage):
 
     @staticmethod
     def build_slice(vars):
-        res = create_empty()
+        res = create_empty( "types" )
         tpname = VarTypes.get_class_typename(get_const_typename(slice(0)))
         res.types[tpname] = VarTypes.types_classes_by_real_name[tpname](*vars)
         return res
 
     @staticmethod
     def build_class(vars):
-        res = create_empty()
+        res = create_empty( "types" )
         tpname = 'TypeSuperMetaClass'
         res.types[tpname] = TypeSuperMetaClass.build(vars, res)
         return res
@@ -415,7 +415,7 @@ class VarTypes(BaseInfoStorage):
         return res
 
     def unary_convert(self):
-        return {"types": create_unknown()}
+        return {"types": create_unknown( "types" )}
 
 
     insts_handler.add_set(InstSet(['COMPARE_OP', 'UNARY_NOT'],
@@ -426,13 +426,15 @@ class VarTypes(BaseInfoStorage):
     insts_handler.add_set(InstSet(['GET_ITER'], get_iter))
 
 
-def create_unknown():
+def create_unknown( analysis_type ):
+  if analysis_type == "types": 
     return VarTypes(init_types={'unknown': None})
 
 def create_undef():
     return VarTypes(init_types={'undef': None})
 
-def create_empty():
+def create_empty( analysis_type ):
+  if analysis_type == "types":
     return VarTypes()
 
 setglobal('VarTypes', VarTypes)

@@ -160,8 +160,9 @@ class TypeCallable(ParentType):
             del newkw['interp']
             count = get_pop_count(kwargs['inst'])
             stack.pop_count(count)
-            if inst_name != 'FOR_ITER' and (inst_name in VAR_INSTS or \
-                 inst_name in stack.implemented_insts or inst_name in smtbl.implemented_insts):
+            # BARMEN if inst_name != 'FOR_ITER' and (inst_name in VAR_INSTS or \
+            #     inst_name in stack.implemented_insts or inst_name in smtbl.implemented_insts):
+            if(inst_name in VAR_INSTS or inst_name in stack.implemented_insts or inst_name in smtbl.implemented_insts):
                 return self.handle_inst_rd(inst_name, *args, **newkw)
             elif inst_name in self.implemented_insts:
                 newkw['self_obj'] = self
@@ -188,20 +189,32 @@ class TypeCallable(ParentType):
         else:
             if inst_name in VAR_INSTS:
                 reordered = reorder(kwargs['inst'], stack.vars_dlt)
+                if inst_name == 'COMPARE_OP':
+                  newkw['type_of_cmp'] = kwargs['inst'][2]
+                res = {}
+                print "REORDERED", reordered
                 newkw['self_obj'] = reordered[0]
                 newkw['vars'] = reordered[1:]
 #                print "handling inst via %r" % reordered[0]["types"].__class__.__name__
                 res = reordered[0]["types"].handle_inst(inst_name, **newkw)
-                
+                #BARMEN
+                vals = tuple(list( x['values'] for x in reordered[1:]))
+                temp = reordered[0]['values'].handle_inst(inst_name, vals=vals, **newkw)
+                if type(temp).__name__ != 'NoneType':
+                    res['values'] = temp['values']
+                else:
+                    res['values'] = create_unknown_value()
             else:
                 raise NotImplementedError("%s doesn't implement instruction %r" % \
                      (self.__class__.__name__, inst_name))
 
         if res is None:
-#            print "Warning: got None result while processing %r: " % inst_name
-            res = {"types": None}
+#            #print"Warning: got None result while processing %r: " % inst_name
+            res = {"types": None, "values": create_empty_value()}
 
         if inst_name not in INSTS_NO_PUSH:
+            print inst_name, "will be pushed"
+            pres = res
             if isinstance(res["types"], VarTypes):
                 stack.push_var(res)
             elif isinstance(res["types"], list):
@@ -225,7 +238,10 @@ class TypeCallable(ParentType):
             # print "BEFORE %r: %r\n%r" % (bb.id,  smtbl, stack)
             print "%03d %s %r" % (inst[0], opname[inst[1]], inst[2])
            # try:
-            self.handle_inst(opname[inst[1]], inst=inst, specInfo=specInfo, interp=True)
+            res = self.handle_inst(opname[inst[1]], inst=inst, specInfo=specInfo, interp=True)
+            if res != None: 
+              _state._cleanup_aso()
+              return {opname[inst[1]]:res}
             #except Exception, e:
              #   print "ERROR: catched exception %r" % e
              #   print "State %r: %r\n%r" %  (bb.id, smtbl, stack)
@@ -239,6 +255,9 @@ class TypeCallable(ParentType):
 #        print "AFTER %r: %r\n%r" %  (bb.id, smtbl, stack)
 
     def process_cfg(self, cfg):
+
+        print cfg
+        appended = set()
 # !FIXME
 #        visited = set()
 #        to_visit = deque(['entry'])
@@ -294,12 +313,55 @@ class TypeCallable(ParentType):
             specInfo['nextAtJumpAddrs'] = parent.next_bbs
             specInfo['borders'] = cfg.codeinfo['blockBorders']
             specInfo['nextIsExit'] = child_id == 'exit'
+            specInfo['nextAtJumpAddrs'] = parent.next_bbs
 
+            res =  None
             if parent_id != 'entry':
-                
+
                 oldstates = deepcopy(parent.states)
                 self._set_state(parent.states.states['normal'])
-                self.transform_bb(parent, specInfo)
+                res = self.transform_bb(parent, specInfo)
+                print res
+
+            if res is not None:
+              #print"FOR_TEST"
+              if ('JUMP_FORWARD' in res.keys() or 'JUMP_ABSOLUTE' in res.keys() or 'CONTINUE_LOOP' in res.keys()):
+                child_id = specInfo['nextAtJumpAddrs'][0]
+              elif ('JUMP_IF_TRUE' in res.keys()):
+                pass
+              elif ('JUMP_IF_FALSE' in res.keys()):
+                #print"JIFJIF", res['JUMP_IF_FALSE']
+                if (res['JUMP_IF_FALSE']['values'].unknown_value ):
+                  pass
+                elif (res['JUMP_IF_FALSE']["values"].values[0] == True):
+                  child_id = min(specInfo['nextAtJumpAddrs'])
+                else:
+                  child_id = max(specInfo['nextAtJumpAddrs'])
+              elif ('FOR_ITER' in res.keys()):
+                if (res['FOR_ITER']["values"].values[0]==True):
+                  child_id = max(specInfo['nextAtJumpAddrs'])
+                else:
+                  child_id = min(specInfo['nextAtJumpAddrs'])
+              else:
+                pass
+              child = cfg.bbs[child_id]
+                ###TEST HERE
+              state_ch = child.states.states['normal']
+              #print"CHILD_STACK", state_ch.stack
+              if (state_ch.inited and state_ch.stack_inited):
+                  #print"CHILD_STACK", state_ch.stack
+                  #print"FIRST"
+                  if (len(state_ch.stack.vars) > 0): 
+                    #print"SECOND"
+                    if (state_ch.stack.vars[-1]["values"].iterator is not None):
+                      #print"THIRD"
+                      if (len(state_ch.stack.vars[-1]["values"].iterator) > 1): 
+                        #print"CUT"
+                        state_ch.stack.vars[-1]['values'].iterator = state_ch.stack.vars[-1]['values'].iterator[1:]
+                      else:
+                        #print"KILL"
+                        state_ch.stack.vars[-1]['values'].iterator = None
+            #print"1======", edgesDeque, "======"
 
             if self.got_exception_insts:
                 child_id = 'exit'
@@ -346,9 +408,9 @@ class TypeCallable(ParentType):
     def store_call_result(self, cfgobj, code, inst_num):
         call_table[(code, inst_num)] = cfgobj.bbs['exit'].states.states['normal'].stack.vars[-1]
 
-    def call(self, from_inst_num, func_args=None):
+    def call(self, analysis_type, from_inst_num, func_args=None):
         setglobal('call_counter', call_counter+1)
-        res = {"types":create_empty()}
+        res = {"types":create_empty( 'types' ), 'values':create_empty_value()}
         prev_state = _state
         for code in self.cfgs:
 #            if (code, from_inst_num) in call_table:
@@ -359,23 +421,36 @@ class TypeCallable(ParentType):
                 cfgobj = self._create_cfgobj(code, func_args)     
                 self.process_cfg(cfgobj)
 #                print call_stack
-                self.store_call_result(cfgobj, *call_stack.pop())
-#                res["types"] |= cfgobj.bbs['exit'].states.states['normal'].stack.vars[-1]["types"]
-                got_res = cfgobj.bbs['exit'].states.states['normal'].stack.vars[-1]
-                res["types"] |= got_res["types"]
-                if "aliases" in got_res.keys():
-                    res["aliases"] = got_res["aliases"]
-                else:
-                    res["aliases"] = create_empty_alias(None,None)
+                print "============================================================"
+                print cfgobj.bbs['exit'].states.states['normal']
+                print "============================================================"
+                #self.store_call_result(cfgobj, *call_stack.pop())
+                if cfgobj.bbs['exit'].states.states['normal'].stack is not None:
+                    temp = cfgobj.bbs['exit'].states.states['normal'].stack.vars[-1]
+                    res["types"] |= temp["types"]
+                    res["values"] |= temp["values"]
+                    print "TYPE", temp["values"].type_of_analysis
+                    if "aliases" in temp.keys():
+                      res["aliases"] = temp["aliases"]
+                    else:
+                      res["aliases"] = create_empty_alias(None,None)
+
+                #res["types"] |= cfgobj.bbs['exit'].states.states['normal'].stack.vars[-1]["types"]
+                #got_res = cfgobj.bbs['exit'].states.states['normal'].stack.vars[-1]
+                #res["types"] |= got_res["types"]
+                #if "aliases" in got_res.keys():
+                #    res["aliases"] = got_res["aliases"]
+                #else:
+                #    res["aliases"] = create_empty_alias(None,None)
 
                 print cfgobj.bbs['exit'].states.states['normal'].stack
                 _megastore.add_one(cfgobj)
-                print cfgobj.prefix, cfgobj.bbs['exit'].states.states['normal']
+                #print cfgobj.prefix, cfgobj.bbs['exit'].states.states['normal']
                 self._set_state(prev_state)
         setglobal('call_counter', call_counter-1)
         if self.is_generator:
 #            new_res = VarTypes(init_from={TypeGeneratorObject.implemented_types[0]: None})
-            new_res = {"types":VarTypes(init_consts=[[]])}
+            new_res = {"types":VarTypes(init_consts=[[]]),'values':create_unknown_value()}
             new_res["types"].types['TypeSuperList'].append(res)
             return new_res["types"].get_iter(None, TypeGeneratorObject)
         else:
@@ -401,7 +476,7 @@ class TypeCallable(ParentType):
 #        from pprint import pprint
 #        print "func_args"
 #        pprint(func_args)
-        
+
         if opname[inst[1]] == 'CALL_FUNCTION_VAR':
             func_args['args'] = stack.vars_dlt[-1]
         elif opname[inst[1]] == 'CALL_FUNCTION_KW':
@@ -426,22 +501,31 @@ class TypeCallable(ParentType):
     @staticmethod
     def call_object(cobj, from_inst_num, func_args):
         if call_counter > 100:
-#            print "Recursion limit(100) reached at calling %r from %r!" % (cobj, self)
-            print "Recursion limit(100) reached at calling %r!" % cobj
-            res = {"types":create_unknown()}
+#            #print"Recursion limit(100) reached at calling %r from %r!" % (cobj, self)
+            #print"Recursion limit(100) reached at calling %r!" % cobj
+            res = {"types":create_unknown("types"), 'values':create_unknown_value()}
         else:
-            res = {"types":create_empty()}
+            res = {"types":create_empty("types"), 'values':create_empty_value()}
             # process every callable type
             for cname in VarTypes.callable_wo_unknown:
+                print "CNAME", cname
                 if cname in cobj["types"].types:
+                    print "CNAME CALL"
                     try:
-                        print cobj["types"].types[cname].call(inst[0], func_args)
-#                        res["types"] |= cobj["types"].types[cname].call(inst[0], func_args)["types"]
-                        got_res = cobj["types"].types[cname].call(inst[0], func_args)
-                        res["types"] |= got_res["types"]
+                        #print cobj["types"].types[cname].call(inst[0], func_args)
+                        #res["types"] |= cobj["types"].types[cname].call(inst[0], func_args)["types"]
+                        #got_res = cobj["types"].types[cname].call(inst[0], func_args)
+                        #res["types"] |= got_res["types"]
 
-                        if "aliases" in got_res.keys():
-                            res["aliases"] = got_res["aliases"]
+                        temp = cobj["types"].types[cname].call("types",inst[0], func_args)
+#       #printcobj
+                        print "============================================"
+                        res["values"] |= temp["values"]
+                        print "============================================"
+                        res["types"] |= temp["types"]
+#                        print res
+                        if "aliases" in temp.keys():
+                            res["aliases"] = temp["aliases"]
                         else:
                             res["aliases"] = create_empty_alias(None,None)
 
@@ -452,12 +536,13 @@ class TypeCallable(ParentType):
                             raise
                         print "Got %r" % e 
                         exit()
-                    
+
             # if found not callable type - add TypeUnknown
             for tname in cobj["types"].types:
                 if tname not in VarTypes.callable_wo_unknown:
-    #                print "Warning: trying to call variable %r" % cobj.types
-                    res["types"] |= create_unknown()
+                    #print"Warning: trying to call variable %r" % cobj.types
+                    res["types"] |= create_unknown( "types" )
+                    res['values'] |= create_unknown_value()
                     break
         return res
 
@@ -470,13 +555,41 @@ class TypeCallable(ParentType):
                 state.stack.handle_inst(opname[inst[1]], inst=inst)
 
     def for_iter(self, inst, specInfo):
-        if specInfo['edgeNum']:
-            stack.pop_top()
-        else:
-            top_var = stack.vars[-1]
-            stack.push_var(top_var["types"].handle_inst(inst=inst,
-                              inst_name=opname[inst[1]], vars=()))
 
+      if specInfo['edgeNum']:
+        stack.pop_top()
+      else:
+#      for state in  _state.states.values():
+        if _state.inited and _state.stack_inited:
+            res_f = {"values":create_empty_value()} 
+            res_f["values"].unknown_value = False
+            top_val = stack.vars[-1]
+            #print"MAINITER", top_val["values"].iterator
+            if (top_val["values"].iterator is None):
+              #print"FOR_TRUE"
+              res_f["values"].add_value(1)
+              return res_f
+            else:
+              res = {"values":create_empty_value()}
+              res["values"].unknown_value = False
+              res["values"].other_values.append(top_val["values"].iterator[0])
+              res["values"].iterator = top_val["values"].iterator[1:]
+              res["types" ] = top_val["types"]
+              stack.pop_top()
+              stack.push_var(res)
+#res["types"] = top_val["types"].handle_inst(inst=inst, inst_name=opname[inst[1]], vars=())["types"]
+              #print"FOR_FALSE"
+              res_f["values"].add_value(0)
+              return res_f
+
+      '''
+      if specInfo['edgeNum']:
+            stack.pop_top()
+      else:
+            top_var = stack.vars[-1]
+            #printopname[inst[1]]
+            stack.push_var(top_var["types"].handle_inst(inst=inst, inst_name=opname[inst[1]], vars=()))
+      '''  
     def return_value(self, inst, specInfo):
         pass
 
@@ -587,6 +700,29 @@ class TypeCallable(ParentType):
         else:
             stack.pop_top()
 
+    def jump_absolute(self, inst, specInfo):
+        return True
+
+    def jump_if_true(self, inst, specInfo):
+        pass
+
+    def jump_if_false(self, inst, specInfo):
+      res = {"values" : create_empty_value()}
+      for stack_val in list( x['values'] for x in _state.stack.vars ):
+        if (stack_val.unknown_value):
+          return {"values":create_unknown_value()} # Означает, что надо проверять обе ветви
+        for val in stack_val.values:
+          res["values"].add_value(val)
+      if (0 in res["values"].values and len(res["values"].values) == 1): 
+        res["values"].unknown_value = False
+        return res
+      elif (0 not in res["values"].values and len(res["values"].values) > 0): 
+        res["values"].unknown_value = False
+        return res
+      else:
+        return {"values":create_unknown_value()}
+
+
     insts_handler.add_set(InstSet(['BREAK_LOOP'], break_loop))
     insts_handler.add_set(InstSet(['FOR_ITER'], for_iter))
 #    insts_handler.add_set(InstSet(['RAISE_VARARGS'], raise_varargs))
@@ -599,12 +735,12 @@ class TypeCallable(ParentType):
 
     insts_handler.add_set(InstSet(['WITH_CLEANUP'], with_cleanup)) # let's have some extra problems :)
 
-    insts_handler.add_set(InstSet(['CONTINUE_LOOP', 'JUMP_FORWARD', 'JUMP_ABSOLUTE'],
-                                  BaseInstHandler.do_nothing))
-    
+    insts_handler.add_set(InstSet(['JUMP_FORWARD', 'JUMP_ABSOLUTE', 'CONTINUE_LOOP'], jump_absolute))
+
     if sys.version_info < (2, 7):
-        insts_handler.add_set(InstSet(['JUMP_IF_TRUE', 'JUMP_IF_FALSE'],
-                                       BaseInstHandler.do_nothing))
+      insts_handler.add_set(InstSet(['JUMP_IF_TRUE'], jump_if_true))
+      insts_handler.add_set(InstSet(['JUMP_IF_FALSE'], jump_if_false))
+
     else:
         insts_handler.add_set(InstSet(['POP_JUMP_IF_TRUE', 'POP_JUMP_IF_FALSE'],
                                        pop_jump_if))
@@ -686,11 +822,11 @@ class TypeModule(TypeCallable, TypeBaseObject):
             print "Warning: %r" % sys.exc_info()[1]
             self.attrs.clear()
 
-    def call(self, *args, **kwargs):
+    def call(self, analysis_type, *args, **kwargs):
         if self.module is not None:
             modules_stack.append(self)
-            super(TypeModule, self).call(*args, **kwargs)
-    #        print modules_stack
+            super(TypeModule, self).call( "types", *args, **kwargs)
+    #        #printmodules_stack
             modules_stack.pop()
 
 
@@ -702,7 +838,7 @@ class TypeModule(TypeCallable, TypeBaseObject):
         prev_state = _state
 
         TypeCallable._set_state(RootState)
-        res.call(0)
+        res.call("types",0)
         res._set_attrs()
         TypeCallable._set_state(prev_state)
         import_table[path] = res
@@ -725,14 +861,14 @@ class TypeModule(TypeCallable, TypeBaseObject):
         else:
 #            print "IMPORTING NEW %r: %r" % (name, full_path)
             if TypeModule.module_in_stack(full_path):
-#                print "GOT IT IN IMPORTED_STACK"
-                return {"types":create_unknown()}
+#                #print"GOT IT IN IMPORTED_STACK"
+                return {"types":create_unknown( "types" ), "values": create_empty_value() }
             if is_package:
                 res = TypePackage.from_code(full_path)
             else:
                 res = TypeModule.from_code(full_path)
 
-        res_vtype = {"types":create_empty()}
+        res_vtype = {"types":create_empty( "types" ), "values" : create_empty_value()}
         res_vtype["types"].add_typeobj(res)
         return res_vtype
 
@@ -740,43 +876,43 @@ class TypeModule(TypeCallable, TypeBaseObject):
     def import_by_name(name, parent_path):
         minfo = TypeModule.find_module(name, parent_path)
         if minfo is None:
-#            print name, parent_path
-            return {"types":create_unknown()}
+#            #printname, parent_path
+            return {"types":create_unknown( "types" ), "values":create_unknown_value()}
         elif (minfo[1].find('/usr/') != -1) or (minfo[1] == ''):
             # stub for system modules or some libs
-            return {"types":create_unknown()}
+            return {"types":create_unknown( "types" ), "values":create_unknown_value()}
 
         full_path = getabspath(minfo[1])
         if minfo[0] is not None:
             minfo[0].close()
         return TypeModule.import_from_path(full_path, minfo[0] is None)
-    
+
     @staticmethod
     def import_by_name_from_dir(name, parent_path):
         minfo = TypeModule.find_module_in_dir(name, parent_path)
         if minfo is None:
-#            print name, parent_path
-            return {"types":create_unknown()}
+#            #printname, parent_path
+            return {"types":create_unknown( "types" ), "values":create_unknown_value()}
         elif (minfo[1].find('/usr/') != -1) or (minfo[1] == ''):
             # stub for system modules or some libs
-            return {"types":create_unknown()}
+            return {"types":create_unknown( "types" ), "values":create_unknown_value()}
 
         full_path = getabspath(minfo[1])
         if minfo[0] is not None:
             minfo[0].close()
         return TypeModule.import_from_path(full_path, minfo[0] is None)
-    
+
     @staticmethod
     def find_module(name, parent_dir):
         TypeModule.il.default_path().append(parent_dir)
         res = TypeModule.il.find_module(name.replace('.', '/'))
         del TypeModule.il.default_path()[-1]
         return res
-    
+
     @staticmethod
     def find_module_in_dir(name, parent_dir):
         return TypeModule.il.find_module_in_dir(name.replace('.', '/'), parent_dir)
-    
+
     def _repr_inner(self):
         return '%s([' % self.clsname + '; '.join(map(lambda x: '%s: %s' % (x[0], x[1]), self.names.items())) + '])'
 
@@ -841,7 +977,7 @@ class TypePackage(TypeModule):
             res = TypePackage(cfg_wrapper.import_module(init_path), module_name, path)
             prev_state = _state
             TypeCallable._set_state(RootState)
-            res.call(0)
+            res.call("types",0)
             res._set_attrs()
             TypeCallable._set_state(prev_state)
         else:
@@ -954,8 +1090,9 @@ class TypeBuiltinFunction(TypeCallable):
             self.united_res = deepcopy(other.united_res)
         self.names |= other.names
 
-    def call(self, from_inst_num, func_args=None):
-        return {"types":deepcopy(self.united_res)}
+    def call(self, analysis_type, from_inst_num, func_args=None):
+        #print"STRANGE CALL"
+        return {"types":deepcopy(self.united_res), "values": create_empty_value()}
 
     def _lge_inner(self, other):
         sc = set(self.names)

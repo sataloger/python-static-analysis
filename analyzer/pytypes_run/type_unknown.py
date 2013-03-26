@@ -78,9 +78,9 @@ class TypeUnknown(BaseType):
         if iname in INSTS_NO_PUSH:
             return
         elif iname != 'UNPACK_SEQUENCE':
-            return {"types":TypeUnknown()}
+            return {"types":TypeUnknown(), "values":create_unknown_value()}
         else:
-            return {"types":[create_unknown() for i in range(inst[2])]}
+            return {"types":[create_unknown( "types" ) for i in range(inst[2])]}
         
     insts_handler.add_set(InstSet(VAR_INSTS, process_any))
 

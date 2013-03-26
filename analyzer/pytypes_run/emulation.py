@@ -247,6 +247,7 @@ class ProcessModule(object):
         #formatter = HtmlFormatter(linenos=True, cssclass="source",
                                  #style=get_style_by_name('colorful'))
         formatter = MyHtmlFormatter(linenos='inline',module=self.__module)
+        print "MODULE", self.__module
         encodings.search_function('utf8')
         ##next command for win
 
@@ -301,6 +302,16 @@ class BaseModuleInfo(object):
             return pformat(states.get_vartypes(varname))
         else:
             return "Unreachable code line in '%s'" % varname
+
+    @staticmethod
+    def get_varvalues(name_state, varname):
+        if name_state is None:
+            return "Strange error"
+        name, bbid, states = name_state
+        if states is not None:
+            return pformat(states.get_varvalues(varname))
+        else:
+            return "Unknown"
 
 
 class ModuleModifier(BaseModuleInfo):
@@ -429,7 +440,9 @@ class MyHtmlFormatter(BaseModuleInfo, HtmlFormatter):
         line = ''
         myescape = lambda x: x.replace('"', '\'')
 
-        #print list(tokensource)
+        f = open('output','w+')
+        f.close()
+        
         for ttype, value in tokensource:
             curstates = self.linestates.get(self.curlineno, None)
 
@@ -445,9 +458,10 @@ class MyHtmlFormatter(BaseModuleInfo, HtmlFormatter):
             if ttype == Token.Text and value == '\n':
                 self.curlineno += 1
             if Token.Name in (ttype, ttype.parent) or value == 'self':
-                addedstyle = 'style="%s" title="%s: %s"' % \
-                        (myvar, value,
-                         myescape(BaseModuleInfo.get_vartypes(curstates, value)))
+                f = open('output', 'a')
+                f.write('%i : %s : type = %s, value = %s\n' % (self.curlineno, value, myescape(BaseModuleInfo.get_vartypes(curstates,     value)), myescape(BaseModuleInfo.get_varvalues(curstates, value))))
+                f.close()
+                addedstyle = 'style="%s" title="%s: %s, val: %s"' % (myvar, value, myescape(BaseModuleInfo.get_vartypes(curstates, value)), myescape(BaseModuleInfo.get_varvalues(curstates, value)))
             elif Token.Literal in (ttype.parent, ttype.parent, ttype.parent.parent) and value not in ('\'', '"'):
 #                addedstyle= 'style="%s" title="const \'%s\': TODO"' % \
 #                        (myconst, value)

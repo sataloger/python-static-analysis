@@ -3,6 +3,7 @@
 import os
 import shutil
 import sys
+import time
 import yapgvb
 from optparse import OptionParser
 from analyzer.pytypes_cfg.cfg_creator import CFGCreator
@@ -54,7 +55,7 @@ if __name__ == '__main__':
         base_dir = options.dir_name
     if os.path.exists(base_dir):
         shutil.rmtree(base_dir)
-        sleep(1)
+        time.sleep(1)
     os.mkdir(base_dir)
 
     save_cfg(CFGCreator.make_cfgs(args[0]), base_dir, options.format, options.all_instructions)

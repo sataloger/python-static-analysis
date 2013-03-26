@@ -87,12 +87,27 @@ class InstsHandler(object):
         return any(inst_num in insts_set for insts_set in self.sets.values())
 
     def handle(self, inst_name, *args, **kwargs):
+        #print "HANDLE 90"
+        #print "INST NAME", inst_name
+        res = None
+        inst_found = False
         for insts_set in self.sets.values():
-            if inst_name in insts_set:
-                return insts_set.handle(*args, **kwargs)
+          if inst_name in insts_set:
+            inst_found = True
+            handled = insts_set.handle(*args, **kwargs)
+            if handled != None and type(handled) is not bool:
+              if res == None:
+                res = {}
+              if type(handled).__name__ == 'MyValues':
+                res['values'] = handled
+              else:
+                for analys_type in handled:
+                  res[analys_type] = handled[analys_type]
+        if(not inst_found): 
+          raise NotImplementedError("Instruction %r hasn't been implemented!" % inst_name)
         else:
-            raise NotImplementedError("Instruction %r hasn't been implemented!" % \
-                                  inst_name)
+          #print "res", res 
+          return res
 
     def __repr__(self):
         return '%s([%s])' % (self.__class__.__name__,
@@ -130,10 +145,12 @@ class BaseInstHandler(object):
         raise NotImplementedError("%s.__deepcopy__" % self.clsname)
 
     def handle_inst(self, inst_name, *args, **kwargs):
+        print "HANDLE_INST", inst_name 
         if inst_name in self.implemented_insts:
             kwargs['self_obj'] = self
             return self.insts_handler.handle(inst_name, *args, **kwargs)
-        elif inst_name in self.redirected_insts:
+        elif type(self).__name__ != 'MyValues':
+          if inst_name in self.redirected_insts:
             return self.handle_inst_rd(inst_name, *args, **kwargs)
         else:
             raise NotImplementedError("%s doesn't implement instruction %r" % \

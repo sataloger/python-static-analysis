@@ -4,6 +4,10 @@ import sys
 import os
 import re
 import itertools
+
+import var_aliases
+import var_values
+
 from random import randint
 from copy import copy, deepcopy
 from collections import deque
@@ -14,6 +18,7 @@ from byteplay import *
 from pytypes_run.base_classes import *
 from pytypes_run.type_unknown import ParentType, TypeUnknown
 from analyzer.pytypes_run.base_classes import BaseInfoStorage
+from pytypes_run.var_values import MyValues
 
 class SymbolTable(BaseInfoStorage):
     insts_handler = deepcopy(BaseInfoStorage.insts_handler)
@@ -54,6 +59,7 @@ class SymbolTable(BaseInfoStorage):
 
         # local variables initializer
         unkn_or_empty = kwargs['entry_bb'] and create_unknown or create_empty
+        unkn_or_empty_value = kwargs['entry_bb'] and create_unknown_value or create_empty_value
 
         if kwargs['entry_bb']:
             self.bb_processed = True
@@ -62,16 +68,16 @@ class SymbolTable(BaseInfoStorage):
             
             self.set_var_names(*smtbl_args['vars'])
             if 'parent' in smtbl_args:
-                self.set_parent(smtbl_args['parent'], unkn_or_empty)
+                self.set_parent(smtbl_args['parent'], unkn_or_empty, unkn_or_empty_value)
             else:
-                self.set_parent(None, unkn_or_empty)
+                self.set_parent(None, unkn_or_empty, unkn_or_empty_value)
             if not kwargs['exit_bb']:
-                self._set_local_vars(unkn_or_empty, smtbl_args.get('func_args'))
+                self._set_local_vars(unkn_or_empty, unkn_or_empty_value, smtbl_args.get('func_args'))
             else:
                 self.locals.clear()
                 for name in self.local_names:
                     self.alias_store.addVar(name, self.cfg.prefix, getabspath(self.cfg.codeobj.co_filename))
-                    self.locals[name] = {"types":unkn_or_empty(),"aliases":create_empty_alias(name, self.cfg.prefix)}
+                    self.locals[name] = {"types":unkn_or_empty( "types" ),"aliases":create_empty_alias(name, self.cfg.prefix),"values":unkn_or_empty_value()}
 
         if smtbl_args['consts'] is not None:
             self.set_consts(smtbl_args['consts'])
@@ -154,7 +160,7 @@ class SymbolTable(BaseInfoStorage):
         return res
 
 
-    def set_parent(self, parent, unkn_or_empty):
+    def set_parent(self, parent, unkn_or_empty, unkn_or_empty_value):
         # FIXME: in python we have symbol tables linking at translation, not at execution
         self.parent = parent
         if parent is None:
@@ -201,10 +207,10 @@ class SymbolTable(BaseInfoStorage):
             cfundef = []
             for name in gleft_set:
                 self.alias_store.addVar(name, self.cfg.prefix, getabspath(self.cfg.codeobj.co_filename))
-                self.globals[name] = {"types":unkn_or_empty(),"aliases":create_empty_alias(name,self.cfg.prefix)}
+                self.globals[name] = {"types":unkn_or_empty( "types" ),"aliases":create_empty_alias(name,self.cfg.prefix),"values":unkn_or_empty_value()}
                 gundef.append(name)
             for i in cfleft_set:
-                self.cell_free_vars[i] = {"types": unkn_or_empty(), "aliases": create_empty_alias(None,None)}
+                self.cell_free_vars[i] = {"types": unkn_or_empty( "types" ), "aliases": create_empty_alias(None,None),"values":unkn_or_empty_value()}
                 cfundef.append(self.cell_free_names[i])
 
             if cfundef:
@@ -216,7 +222,9 @@ class SymbolTable(BaseInfoStorage):
             if gundef and parent is not RootSymTable:
                 if '__module__' in gundef:
                     # stub for creating MetaClass global symtable
-                    self.globals['__name__'] = {"types": VarTypes(init_types={'str':None}), "aliases": create_empty_alias('__name__',None)}
+                    #TODO TEST
+                    self.globals['__name__'] = {"types": VarTypes(init_types={'str':None}), "aliases": create_empty_alias('__name__',None),"values":create_empty_value()}
+                    print 'gundef: %r its name: %r', gundef, gundef['__name__']
                 else:
                     pass
 #                    print 'Warning: global variables %r wasn\'t defined!' % gundef
@@ -237,10 +245,11 @@ class SymbolTable(BaseInfoStorage):
                 theory_argc -= 1
                 kwargs_pos = theory_argc
                 # preparing **kwargs arguments dict
+                ### arguments pathing
                 if 'kwargs' in func_args:
                     kwargs_obj = deepcopy(func_args['kwargs'])
                 else:
-                    kwargs_obj = {"types":VarTypes(init_types={'dict': {}}), "aliases": create_empty_alias(None,'kwargs_obj')} #TODO
+                    kwargs_obj = {"types":VarTypes(init_types={'dict': {}}), "aliases": create_empty_alias(None,'kwargs_obj'),"values":create_empty_values()} ###TODO
 
             if cfg.flags['accept_args']:
                 theory_argc -= 1
@@ -250,7 +259,7 @@ class SymbolTable(BaseInfoStorage):
                     args_obj = func_args['args'].to_list()
 #                    args_obj = deepcopy(func_args['args'])
                 else:
-                    args_obj = {"types":VarTypes(init_types={'list': []}), "aliases": create_empty_alias(None,'args_obj')}
+                    args_obj = {"types":VarTypes(init_types={'list': []}), "aliases": create_empty_alias(None,'args_obj'),"values":create_empty_values()}
 
             pto_local = {}
             # NOTE : SymbolTable.get_parameters() lies to us!
@@ -280,7 +289,15 @@ class SymbolTable(BaseInfoStorage):
                         _lvar = self.locals[self.local_names[pto_local[pid]]]['aliases']
 #                        raise TEST
                         self.locals[self.local_names[pto_local[pid]]]['aliases'] = self.alias_store[_lvar.varprefix+"."+ _lvar.varname]
-                    
+
+                    self.locals[self.local_names[pto_local[pid]]]['values'] = create_empty_value();
+                    #TODO TEST PARAMS
+                    self.locals[self.local_names[pto_local[pid]]]['values'].unknown_value = False;
+                    for value in paramobj['values'].values:  
+                      self.locals[self.local_names[pto_local[pid]]]['values'].add_value(value)
+
+
+
                     lset.add(self.local_names[pto_local[pid]])
 
             lsize = len(lset)
@@ -336,14 +353,15 @@ class SymbolTable(BaseInfoStorage):
         self.free_names = list(free_names)
         self.cell_free_names = self.cell_names + self.free_names
 
-    def _set_local_vars(self, unkn_or_empty, func_args=None):
+    def _set_local_vars(self, unkn_or_empty, unkn_or_empty_value, func_args=None):
+        print "Setting local vars"
         lset = set(self.local_names)
         self.locals.clear()
         if func_args is not None:
             lset.difference_update(self.set_func_args(func_args))
         for name in lset:
             self.alias_store.addVar(name, self.cfg.prefix, getabspath(self.cfg.codeobj.co_filename))
-            self.locals[name] = {"types":unkn_or_empty(), "aliases": create_empty_alias(name, self.cfg.prefix)}
+            self.locals[name] = {"types":unkn_or_empty( "types" ), "aliases": create_empty_alias(name, self.cfg.prefix),"values":unkn_or_empty_value()}
             
     def _update_aso(self):
         self._aso.update(self.get_id_vars())
@@ -351,7 +369,9 @@ class SymbolTable(BaseInfoStorage):
     def set_consts(self, consts):
         self.consts.clear()
         for const_num in range(len(consts)):
-            self.consts[const_num] = {"types":VarTypes(init_consts=consts[const_num]), "aliases": create_empty_alias(None,None)}
+            self.consts[const_num] = {"types":VarTypes(init_consts=consts[const_num]), "aliases": create_empty_alias(None,None),"values":MyValues([consts[const_num],False])}
+            #self.consts[const_num]["values"].add_value(const_num);
+            #print "!!!CONST ", const_num
 
     @staticmethod
     def create_root_symtable():
@@ -405,7 +425,7 @@ class SymbolTable(BaseInfoStorage):
                         had_type = True
                         res_type = TypeUnknown()
                 if had_type:
-                    v_res = create_empty()
+                    v_res = create_empty( "types" )
                     v_res.types[res_type.clsname] = deepcopy(res_type)
                 else:
                     v_res = VarTypes(init_consts=res_list)
@@ -440,7 +460,7 @@ class SymbolTable(BaseInfoStorage):
         st = SymbolTable()
         st.global_names = gl_names
         for i, elem in enumerate(gl_list):
-            st.globals[gl_names[i]] = {"types":elem, "aliases": create_empty_alias(gl_names[i],'global')}
+            st.globals[gl_names[i]] = {"types":elem, "aliases": create_empty_alias(gl_names[i],'global'),"values":create_unknown_value()}
 
         st.cfg = cfg
         st.parent = None
@@ -480,28 +500,38 @@ class SymbolTable(BaseInfoStorage):
             self.alias_store = deepcopy(other.alias_store)
 
         for name in sg & og:
+#print "Name:", name
+            print "Values:", self.globals[name]
+#           print "Types:",  self.globals[name]["types"]
+#           print "\n"
             self.globals[name]["types"] |= other.globals[name]["types"]
-            # duplicate result for correct bb handling
+            self.globals[name]["values"] |= other.globals[name]["values"]
+			# duplicate result for correct bb handling
 
 #            self.globals[name]["aliases"] = self.alias_store[self.cfg.prefix + "." + name] # raised keyerror from wwrong prefix
             self.globals[name]["aliases"] = self.alias_store.search_prefix(self.cfg.prefix, name)
 
         for name in og - sg:
             self.globals[name]["types"] = other.globals[name]["types"]
+            self.globals[name]["values"] = other.globals[name]["values"]
+
 #            self.globals[name]["aliases"] = self.alias_store[self.cfg.prefix + "." + name]
             self.globals[name]["aliases"] = self.alias_store.search_prefix(self.cfg.prefix, name)
-
         for name in sl & ol:
 #            print "Var %r:\n\t%r\n\t%r" % (name,self.locals[name],other.locals[name])
             self.locals[name]["types"] |= other.locals[name]["types"]
             self.locals[name]["aliases"] = self.alias_store[self.cfg.prefix + "." + name]
+            self.locals[name]["values"] |= other.locals[name]["values"]
         for name in ol - sl:
             self.locals[name]["types"] = deepcopy(other.locals[name]["types"])
+            self.locals[name]["values"] = deepcopy(other.locals[name]["values"])
             self.locals[name]["aliases"] = self.alias_store[self.cfg.prefix + "." + name]
-            self._aso[id(self.locals[name]["types"])] = self.locals[name]
+            #NOBARMENself._aso[id(self.locals[name]["types"])] = self.locals[name]
+            self._aso[id(self.locals[name])] = self.locals[name]
 
         for var_key in self.cell_free_vars:
             self.cell_free_vars[var_key]["types"] |= other.cell_free_vars[var_key]["types"]
+            self.cell_free_vars[var_key]["values"] |= other.cell_free_vars[var_key]["values"]
 
         self.bb_processed = other.bb_processed
         return self
@@ -554,6 +584,9 @@ class SymbolTable(BaseInfoStorage):
                       for vk in self.globals]
         lge_list.extend([self.locals[vk]["types"].lge(other.locals[vk]["types"])
                         for vk in self.locals])
+        lge_list.extend([self.globals[vk]["values"].lge(other.globals[vk]["values"]) for vk in self.globals])
+        lge_list.extend([self.locals[vk]["values"].lge(other.locals[vk]["values"]) for vk in self.locals])
+        
         lge_list.extend([self.cell_free_vars[vk]["types"].\
                          lge(other.cell_free_vars[vk]["types"])
                         for vk in self.cell_free_vars])
@@ -635,17 +668,17 @@ class SymbolTable(BaseInfoStorage):
         if diff:
             self.__add_changed_type_place((instnum, name, diff))
             self.__add_for_asserts((instnum, name, varobj))
+#        self.globals[name] = varobj
+        self.globals[name]["types"] = varobj["types"]
+        self.globals[name]["values"] = varobj["values"]
+        #self.globals[name]["types"] = varobj["types"]
 
         if 'aliases' in varobj:
             self.alias_store.addAlias(self.globals[name]['aliases'], varobj['aliases'] )
             self.globals[name]['aliases'] = self.alias_store.search_prefix(self.cfg.prefix, name)
-
-
-
         else:
             print "Warning: assigning value hasn't 'aliases' key: %r" % varobj
-
-        self.globals[name]["types"] = varobj["types"]
+		
 
     def load_global(self, inst):
         name = self.global_names[inst[2]]
@@ -665,8 +698,8 @@ class SymbolTable(BaseInfoStorage):
                                     init_types_constructor_kwargs={
                                         '::inner_symtable': {'_smtbl': smtbl, 
                                                              'code': call_stack[-1][0]},
-                                   }
-                       )}
+                                    }
+                       ) , "values":create_empty_value()}
 
     def delete_global(self, inst):
         name = self.global_names[inst[2]]
@@ -687,15 +720,18 @@ class SymbolTable(BaseInfoStorage):
             self.__add_changed_type_place((instNum, name, diff))
             self.__add_for_asserts((instNum, name, varobj))
 
+        print self.locals[name]
+        print varobj
+#        self.locals[name] = varobj
+        self.locals[name]['types'] = varobj['types']
+        self.locals[name]['values'] = varobj['values']
         if 'aliases' in varobj:
             self.alias_store.addAlias(self.locals[name]['aliases'], varobj['aliases'] )
-
-
             self.locals[name]['aliases'] = self.alias_store[self.cfg.prefix+"."+ name]
         else:
             print "Warning: assigning value hasn't 'aliases' key: %r" % varobj
-
-        self.locals[name]["types"] = varobj["types"]
+        
+        #self.locals[name] = varobj ###
         _state._add_to_aso(varobj)
 
     def get_varname_by_id(self, varid):
@@ -736,6 +772,11 @@ class SymbolTable(BaseInfoStorage):
                     init_types_constructor_kwargs={'function': {'default_params_one': curSt[1:],
                                                                 'code': code["types"]}
                                                   })
+        values = []
+        print code
+        values.append(code['values'])
+        res['values'] = MyValues(init_value=[values,False])
+
         return res
 
 
@@ -811,6 +852,13 @@ class SymbolTable(BaseInfoStorage):
     insts_handler.add_set(InstSet(['IMPORT_FROM'], import_from))
     insts_handler.add_set(InstSet(['LOAD_LOCALS'], load_locals))
 
+    ###
+
+    def compare_op(self, inst):
+      return {"types":VarTypes(init_types={'bool':None}), 'values':create_unknown_value()}
+
+# insts_handler.add_set(InstSet(['COMPARE_OP'], compare_op))
+
 class Stacks(BaseInfoStorage):
     insts_handler = deepcopy(BaseInfoStorage.insts_handler)
     implemented_insts = insts_handler.stored_insts
@@ -868,6 +916,7 @@ class Stacks(BaseInfoStorage):
     def __comparable(self, other):
         if other is None:
             return False
+
         res = len(self.vars) != len(other.vars) or \
               len(self.blocks) != len(other.blocks) or \
               all(imap(lambda x,y:x==y, self.blocks, other.blocks))
@@ -878,7 +927,8 @@ class Stacks(BaseInfoStorage):
             raise Exception("Stack objects are incomparable: %s\n\n\n%s"
                             % (str(self), str(other)))
         for var_self, var_other in izip(self.vars, other.vars):
-            var_self["types"] |= var_other["types"]
+            var_self["types"] |= var_other["types"] 
+            var_self["values"] |= var_other["values"]
             if "aliases" in var_self.keys():
                 var_self["aliases"] |= var_other["aliases"]
         return self
@@ -909,6 +959,7 @@ class Stacks(BaseInfoStorage):
         if len(self.vars):
             res = 'Stack(%i):\n\t%s' % (len(self.vars),
                     '\t\n'.join(map(lambda x: "%r: %r" % (id(x), x), self.vars)))
+            res += "ITERATOR: %r" % self.vars[-1]["values"].iterator
         else:
             res = 'Stack(0): <empty>'
         return res
@@ -930,7 +981,7 @@ class Stacks(BaseInfoStorage):
         self.vars.extend(vars)
 
     def push_var_unknown(self):
-        self.vars.append({"types":create_unknown()})
+        self.vars.append({"types":create_unknown(), 'values':create_unknown_value()})
 
     def pop_top(self):
         self.vars_dlt = [self.vars.pop()]
@@ -1002,15 +1053,15 @@ class Stacks(BaseInfoStorage):
     def build_insts(self, inst):
         reordered = reorder(inst, self.vars_dlt)
         if opname[inst[1]] == 'BUILD_TUPLE':
-            self.vars.append({"types":VarTypes.build_tuple(reordered)})
+            self.vars.append({"types":VarTypes.build_tuple(reordered), 'values':create_unknown_value()})
         elif opname[inst[1]] == 'BUILD_LIST':
-            self.vars.append({"types":VarTypes.build_list(reordered)})
+            self.vars.append({"types":VarTypes.build_list(reordered), 'values':create_unknown_value()})
         elif opname[inst[1]] == 'BUILD_MAP':
-            self.vars.append({"types":VarTypes.build_dict(inst)})
+            self.vars.append({"types":VarTypes.build_dict(inst), 'values':create_unknown_value()})
         elif opname[inst[1]] == 'BUILD_SLICE':
-            self.vars.append({"types":VarTypes.build_slice(reordered)})
+            self.vars.append({"types":VarTypes.build_slice(reordered), 'values':create_unknown_value()})
         elif opname[inst[1]] == 'BUILD_CLASS':
-            self.vars.append({"types":VarTypes.build_class(reordered)})
+            self.vars.append({"types":VarTypes.build_class(reordered), 'values':create_unknown_value()})
 
 
     insts_handler.add_set(InstSet(['POP_TOP'], pop_top))
@@ -1212,6 +1263,17 @@ class InterprState(BaseInfoStorage):
     _pretty_inner = _repr_inner
     _show_dublicates = _pretty_inner
 
+    def get_varvalues(self, varname):
+        if varname in self.smtbl.local_names:
+#            self.smtbl.locals[varname]['aliases'] =  self.smtbl.alias_store.getVarAliases(varname)
+            res =  self.smtbl.locals[varname]
+        elif varname in self.smtbl.global_names:
+#            self.smtbl.globals[varname]['aliases'] = self.smtbl.alias_store.getVarAliases(varname)
+            res = self.smtbl.globals[varname]
+        else:
+            return None
+        return res["values"]
+
     def get_vartypes(self, varname):
         aliasanalysis = getglobal('aliasanalysis')
         if aliasanalysis:
@@ -1354,13 +1416,13 @@ class InterpreterStates(BaseInfoStorage):
 
     def raise_exception(self, push_to_stack=None):
         if push_to_stack is None:
-            push_to_stack = ({"types":create_unknown()},
-                             {"types":create_unknown()},
-                             {"types":create_unknown()})
+            push_to_stack = ({"types":create_unknown(), 'values':create_unknown_value()},
+                             {"types":create_unknown(), 'values':create_unknown_value()},
+                             {"types":create_unknown(), 'values':create_unknown_value()})
         else:
             push_to_stack = list(push_to_stack)
             while len(push_to_stack) < 3:
-                push_to_stack.insert(0, {"types":create_unknown()})
+                push_to_stack.insert(0, {"types":create_unknown(), 'values':create_unknown_value()})
         if len(self.states) == 2:
             print "WARNING: raising exception with normal and raised states"
             self.states['raised'] |= self.states['normal']
@@ -1374,6 +1436,10 @@ class InterpreterStates(BaseInfoStorage):
 
     def get_vartypes(self, varname):
         return dict(((stname, state.get_vartypes(varname))
+                   for stname, state in self.states.items()))
+
+    def get_varvalues(self, varname):
+        return dict(((stname, state.get_varvalues(varname))
                    for stname, state in self.states.items()))
 
     def get_vars(self):

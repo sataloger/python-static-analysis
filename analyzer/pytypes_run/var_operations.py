@@ -42,8 +42,7 @@ BINARY_INSTS = frozenset(['BINARY_POWER', 'BINARY_MULTIPLY',
                 'BINARY_DIVIDE', 'BINARY_MODULO', 'BINARY_ADD',
                 'BINARY_SUBTRACT', 'BINARY_SUBSCR', 'BINARY_FLOOR_DIVIDE',
                 'BINARY_TRUE_DIVIDE', 'BINARY_LSHIFT', 'BINARY_RSHIFT',
-                'BINARY_AND', 'BINARY_XOR', 'BINARY_OR',
-
+                'BINARY_AND', 'BINARY_XOR', 'BINARY_OR', 'COMPARE_OP',
                 'INPLACE_FLOOR_DIVIDE', 'INPLACE_TRUE_DIVIDE',
                 'INPLACE_ADD', 'INPLACE_SUBTRACT', 'INPLACE_MULTIPLY',
                 'INPLACE_DIVIDE', 'INPLACE_MODULO', 'INPLACE_POWER',
@@ -145,11 +144,14 @@ def get_pop_count(inst):
             raise NotImplementedError("Unknown instruction at get_pop_count: %r" % inst_name)
     return count
 
-def reorder(inst, vars_dlt):
-    if opname[inst[1]] in REORDER_SEQ:
+def reorder(inst, vars_dlt, do_nothing = False):
+    print "REORDER_FUNC", inst, vars_dlt
+    if opname[inst[1]] in REORDER_SEQ and not do_nothing:
         assert len(vars_dlt) == len(REORDER_SEQ[opname[inst[1]]])
 #        print "GOTCHA", [vars_dlt[i] for i in REORDER_SEQ[opname[inst[1]]]]
         return [vars_dlt[i] for i in REORDER_SEQ[opname[inst[1]]]]
+    elif do_nothing and opname[inst[1]] in BINARY_INSTS:
+        return [vars_dlt[i] for i in (1,0)]
     else:
         return tuple(reversed(vars_dlt))
 

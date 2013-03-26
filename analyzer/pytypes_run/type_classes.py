@@ -119,7 +119,7 @@ class TypeSimple(ParentType):
         if other is not None:
             return {"types":self | other["types"]}
         else:
-            res = {"types": create_unknown()}
+            res = {"types": create_unknown( "types" )}
             res["types"].add_typeobj(deepcopy(self))
             return res
 
@@ -307,12 +307,13 @@ class TypeIterator(ParentType):
         return len(self.values)
 
     def next(self, inst):
+        print "NEXT"
         init_types = {}
         for name in self.values:
             init_types[name] = None
         return {"types":VarTypes(init_types=init_types)}
 
-    insts_handler.add_set(InstSet(['FOR_ITER'], next))
+#    insts_handler.add_set(InstSet(['FOR_ITER'], next))
 
 class TypeGeneratorObject(TypeIterator):
     implemented_types = ('generator_object',)

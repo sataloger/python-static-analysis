@@ -25,8 +25,10 @@ blockEndInstrs = [JUMP_FORWARD, JUMP_ABSOLUTE, BREAK_LOOP, CONTINUE_LOOP] \
  # считаем, что все вызовы бросают исключения
 #blockEndInstrs += [opmap[op_name] for op_name in opmap
 #                       if op_name.startswith('CALL_FUNCTION')]
-start_ops = [opmap['STORE_GLOBAL'],opmap['STORE_NAME'], opmap['STORE_FAST'],opmap['STORE_DEREF'],
-             opmap['DELETE_GLOBAL'],opmap['DELETE_FAST'] ]
+start_ops = [
+    opmap['STORE_GLOBAL'],opmap['STORE_NAME'], opmap['STORE_FAST'],opmap['STORE_DEREF'],
+    opmap['DELETE_GLOBAL'],opmap['DELETE_FAST'], opmap['STORE_ATTR'], opmap['DELETE_ATTR']
+]
 
 class bb(object): # TODO: rename it to BaseBlock ?
     def __init__(self, prefix, parent_cfg, insts = None):

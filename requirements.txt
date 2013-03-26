@@ -1,4 +1,4 @@
 sqlalchemy==0.7.8,
 pysqlite==2.6.3,
 pygments==1.5,
-yapgvb==1.2.0
+yapgvb>=1.2.0

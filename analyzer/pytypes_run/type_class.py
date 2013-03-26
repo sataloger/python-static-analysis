@@ -74,7 +74,7 @@ class TypeBaseSuper(ParentType):
 
     def load_attr(self, inst):
         if not self.values:
-            return {"types":create_unknown()}
+            return {"types":create_unknown( "types" )}
         else:
             res = {"types":create_empty()}
             for v in self.values.values():
@@ -167,7 +167,7 @@ class TypeObject(ParentType):
         if '__init__' in self.meta_parent["types"].attrs:
             vinit = self.meta_parent["types"].attrs['__init__']
             if 'TypeClassMethod' in vinit["types"].types:
-                vinit["types"].types['TypeClassMethod'].call(from_inst_num, func_args)
+                vinit["types"].types['TypeClassMethod'].call( "types", from_inst_num, func_args)
 
     # this is working like single proxy
     def call_func(self, inst, specInfo):
@@ -175,7 +175,7 @@ class TypeObject(ParentType):
             return self.meta_parent.attrs['__call__'].handle_inst_rd(inst[1], inst, (),
                     specInfo=specInfo, no_push=True)
         else:
-            return {"types":create_unknown()}
+            return {"types":create_unknown( "types" )}
 
 
     def _repr_inner(self):
@@ -214,7 +214,7 @@ class TypeObject(ParentType):
             return self.meta_parent["types"].attrs[attrname]
         else:
             print "Warning: trying to load attribute %r from %r" % (attrname, self.meta_parent)
-            return {"types":create_unknown()}
+            return {"types":create_unknown( "types" )}
 
     insts_handler.add_set(InstSet(['STORE_ATTR'], store_attr))
     insts_handler.add_set(InstSet(['LOAD_ATTR'], load_attr))
@@ -347,9 +347,9 @@ class TypeClassMethod(TypeFunction):
             res['params'] = res_params
         return res
 
-    def call(self, from_inst_num, func_args=None):
+    def call(self, analysis_type, from_inst_num, func_args=None):
 #        print "CALLING METHOD for mclsdictid: %r"  % id(self.mclsdict)
-        return TypeFunction.call(self, from_inst_num, func_args)
+        return TypeFunction.call( "types", self, from_inst_num, func_args)
 
     @staticmethod
     def build(basefunc, mclsdict):
@@ -403,7 +403,7 @@ class TypeMetaClass(TypeBaseObject):
 #    def _pretty_inner(self):
 #        return '%s' % self.name
 
-    def call(self, from_inst_num, func_args=None):
+    def call(self, analysis_type, from_inst_num, func_args=None):
         meta_parent = {"types":self}
         return {"types":TypeObject(self.name, meta_parent, [from_inst_num, func_args])}
 
@@ -436,15 +436,15 @@ class TypeSuperMetaClass(TypeCallable, TypeBaseSuper):
         return
         self.values[cur_name] |= const
 
-    def call(self, from_inst_num, func_args=None):
+    def call(self, analysis_type, from_inst_num, func_args=None):
         if not self.values:
-            return {"types" : create_unknown()}
+            return {"types" : create_unknown( "types" )}
         else:
             vparent = {"types" : create_empty()}
 #            print "CALLING METACONSTRUCTOR, objid: %r" % id(vparent)
             vparent["types"].types['TypeSuperObject'] = TypeSuperObject(vparent["types"])
             for name, v in self.values.items():
-                vparent["types"].types['TypeSuperObject'].add_one(v.call(from_inst_num, func_args)["types"])
+                vparent["types"].types['TypeSuperObject'].add_one(v.call( "types", from_inst_num, func_args)["types"])
             return vparent
 
     @staticmethod
